@@ -38,6 +38,10 @@ def infix_to_postfix(expression): # Shunting Yard algorithm.
     return ''.join(output)
 
 # -------------------------------------------------- Build Tree --------------------------------------------------
+# Quick Note: Here we Switch .
+# We Used to Put The Operators(!&|>#) in The Stack and the Operands (abc) in the Output
+# Now We Put The The Operands (abc) in The Stack and we work with Operators(!&|>#) to determine The Nodes Children
+
 def build_expression_tree(postfix_expression):
         
         def is_operator(char):
@@ -67,7 +71,7 @@ def build_expression_tree(postfix_expression):
             return None
 
 # ----- Init Values -------
-formula = "!(a & b | c) > (d | e & !(f | g) > h)"
+formula = "p&!q>r "
 postfix_formula = infix_to_postfix(formula)
 print("---------------------")
 print("InFix: "+ formula )
