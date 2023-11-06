@@ -70,20 +70,57 @@ def build_expression_tree(postfix_expression):
         else:
             return None
 
+# -------------------------------------------------- Truth Or False --------------------------------------------------
+def evaluate_expression(expression):
+    stack = []
+
+    for char in expression:
+        if char.isalnum():
+            # If it's a propositional variable, ask the user for its truth value
+            value = input(f"Enter truth value for '{char}' (T for True, F for False): ")
+            truth_value = True if value.lower() == 't' else False
+            stack.append(truth_value)
+        elif char in "!&|>":
+            # If it's an operator, pop the required number of truth values and apply the operator
+            if char == "!":
+                operand = not stack.pop()
+            elif char == "&":
+                operand2 = stack.pop()
+                operand1 = stack.pop()
+                operand = operand1 and operand2
+            elif char == "|":
+                operand2 = stack.pop()
+                operand1 = stack.pop()
+                operand = operand1 or operand2
+            elif char == ">":
+                operand2 = stack.pop()
+                operand1 = stack.pop()
+                operand = (not operand1) or operand2
+            stack.append(operand)
+
+    # The final truth value of the expression will be on the top of the stack
+    return stack[0]
+
+
 # ----- Init Values -------
-formula = "p&!q>r "
+formula = "p&!q>r"
 postfix_formula = infix_to_postfix(formula)
 print("---------------------")
 print("InFix: "+ formula )
 print("---------------------")
-
 print("PostFix: "+ postfix_formula )
 print("---------------------")
+
+
 
 # ----- Build Tree -------
 tree = build_expression_tree(postfix_formula)
 print(tree)
 # ------------------------
+
+result = evaluate_expression(postfix_formula)
+print("Result: " + str(result))
+
 #p&!q>r 
 #(p>(q|r))|!(r>w)
 #!(a & b | c) > (d | e & !(f | g) > h)
