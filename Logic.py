@@ -75,16 +75,16 @@ def evaluate_expression(expression):
     stack = []
 
     for char in expression:
-        if char.isalnum():
-            # If it's a propositional variable, ask the user for its truth value
+        if char.isalnum(): #if it is AlphaNumerical
+            # If it's a propositional variable, we ask the user for its truth value
             value = input(f"Enter truth value for '{char}' (T for True, F for False): ")
             truth_value = True if value.lower() == 't' else False
             stack.append(truth_value)
         elif char in "!&|>":
-            # If it's an operator, pop the required number of truth values and apply the operator
+            # If it's an operator, we pop the required number of truth values and apply the operator
             if char == "!":
                 operand = not stack.pop()
-            elif char == "&":
+            elif char == "&":        
                 operand2 = stack.pop()
                 operand1 = stack.pop()
                 operand = operand1 and operand2
@@ -95,8 +95,9 @@ def evaluate_expression(expression):
             elif char == ">":
                 operand2 = stack.pop()
                 operand1 = stack.pop()
-                operand = (not operand1) or operand2
-            stack.append(operand)
+                operand = (not operand1) or operand2 # Cuz [ A > B == !A | B ]
+
+            stack.append(operand)  # Here we insert our value back to the stack (whether its True Or Flase) :)
 
     # The final truth value of the expression will be on the top of the stack
     return stack[0]
