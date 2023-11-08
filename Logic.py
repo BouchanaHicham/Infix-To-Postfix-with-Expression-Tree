@@ -103,6 +103,7 @@ def evaluate_expression(expression):
     return stack[0]
 
 
+
 # ----- Init Values -------
 formula = "p&!q>r"
 postfix_formula = infix_to_postfix(formula)
