@@ -113,9 +113,6 @@ print("---------------------")
 print("PostFix: "+ postfix_formula )
 print("---------------------")
 
-
-
-
 # ----- Build Tree -------
 tree = build_expression_tree(postfix_formula)
 print(tree)
@@ -123,6 +120,8 @@ print(tree)
 
 result = evaluate_expression(postfix_formula)
 print("Result: " + str(result))
+
+
 
 #p&!q>r 
 #(p>(q|r))|!(r>w)
