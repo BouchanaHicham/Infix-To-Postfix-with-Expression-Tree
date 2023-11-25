@@ -73,13 +73,16 @@ def build_expression_tree(postfix_expression):
 # -------------------------------------------------- Truth Or False --------------------------------------------------
 def evaluate_expression(expression):
     stack = []
+    truth_values = {}  # Dictionary to store truth values
 
     for char in expression:
         if char.isalnum(): #if it is AlphaNumerical
-            # If it's a propositional variable, we ask the user for its truth value
-            value = input(f"Enter truth value for '{char}' (T for True, F for False): ")
-            truth_value = True if value.lower() == 't' else False
-            stack.append(truth_value)
+            if char not in truth_values:
+                # If it's a propositional variable, we ask the user for its truth value
+                value = input(f"Enter truth value for '{char}' (T for True, F for False): ")
+                truth_values[char] = True if value.lower() == 't' else False
+            
+            stack.append(truth_values[char])
         elif char in "!&|>":
             # If it's an operator, we pop the required number of truth values and apply the operator
             if char == "!":
@@ -118,8 +121,8 @@ tree = build_expression_tree(postfix_formula)
 print(tree)
 # ------------------------
 
-result = evaluate_expression(postfix_formula)
-print("Result: " + str(result))
+#result = evaluate_expression(postfix_formula)
+#print("Result: " + str(result))
 
 
 
@@ -127,3 +130,79 @@ print("Result: " + str(result))
 #(p>(q|r))|!(r>w)
 #!(a & b | c) > (d | e & !(f | g) > h)
 #((a | b) & (c > d)) | (e & f)
+def to_cnf(formula):
+    def distribute_or_over_and(left, right):
+        if isinstance(left, binarytree.Node) and left.value == "&":
+            return binarytree.Node("&", distribute_or_over_and(left.left, right), distribute_or_over_and(left.right, right))
+        elif isinstance(right, binarytree.Node) and right.value == "&":
+            return binarytree.Node("&", distribute_or_over_and(left, right.left), distribute_or_over_and(left, right.right))
+        else:
+            return binarytree.Node("|", left, right)
+
+    def cnf(node):
+        if node is None:
+            return None
+        elif not hasattr(node, 'left') and not hasattr(node, 'right'):
+            return node
+        elif node.value == "&":
+            return binarytree.Node("&", cnf(node.left), cnf(node.right))
+        elif node.value == "|":
+            return distribute_or_over_and(cnf(node.left), cnf(node.right))
+        elif node.value == ">":
+            return distribute_or_over_and(cnf(binarytree.Node("!", node.left)), cnf(node.right))
+        elif node.value == "!":
+            if not hasattr(node.right, 'left') and not hasattr(node.right, 'right'):
+                return node
+            elif node.right.value == "&":
+                return distribute_or_over_and(cnf(binarytree.Node("!", node.right.left)), cnf(binarytree.Node("!", node.right.right)))
+            elif node.right.value == "|":
+                return cnf(binarytree.Node("&", binarytree.Node("!", node.right.left), binarytree.Node("!", node.right.right)))
+            elif node.right.value == ">":
+                return cnf(binarytree.Node("&", cnf(node.right.left), cnf(binarytree.Node("!", node.right.right))))
+            elif node.right.value == "!":
+                return cnf(node.right.right)
+        
+    cnf_tree = cnf(formula)
+    return cnf_tree
+
+# Example
+cnf_formula = to_cnf(tree)
+print("CNF Form: ")
+print(cnf_formula)
+
+
+
+def to_cnf_string_with_clauses(formula):
+    # Convert to CNF
+    cnf_formula_tree = to_cnf(build_expression_tree(infix_to_postfix(formula)))
+
+    # Convert CNF tree to a string with clauses
+    def tree_to_string(node):
+        if node is None:
+            return ""
+        elif not hasattr(node, 'left') and not hasattr(node, 'right'):
+            return str(node.value)
+        elif node.value == "&":
+            return f"({tree_to_string(node.left)} & {tree_to_string(node.right)})"
+        elif node.value == "|":
+            return f"({tree_to_string(node.left)} | {tree_to_string(node.right)})"
+        elif node.value == ">":
+            return f"({tree_to_string(binarytree.Node('!', node.left))} | {tree_to_string(node.right)})"
+        elif node.value == "!":
+            if not hasattr(node.right, 'left') and not hasattr(node.right, 'right'):
+                return f"!{node.right.value}"
+            elif node.right.value == "&":
+                return f"!({tree_to_string(node.right.left)} & {tree_to_string(node.right.right)})"
+            elif node.right.value == "|":
+                return f"!({tree_to_string(node.right.left)} | {tree_to_string(node.right.right)})"
+            elif node.right.value == ">":
+                return f"!({tree_to_string(node.right.left)} | {tree_to_string(binarytree.Node('!', node.right.right))})"
+            elif node.right.value == "!":
+                return f"!{tree_to_string(node.right.right)}"
+
+    return tree_to_string(cnf_formula_tree)
+
+# Example
+formula = "!(a & b | c) > (d | e & !(f | g) > h)"
+cnf_formula_string = to_cnf_string_with_clauses(formula)
+print("CNF Form as String with Clauses: ", cnf_formula_string)
