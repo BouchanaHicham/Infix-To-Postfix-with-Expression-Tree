@@ -171,38 +171,3 @@ print("CNF Form: ")
 print(cnf_formula)
 
 
-
-def to_cnf_string_with_clauses(formula):
-    # Convert to CNF
-    cnf_formula_tree = to_cnf(build_expression_tree(infix_to_postfix(formula)))
-
-    # Convert CNF tree to a string with clauses
-    def tree_to_string(node):
-        if node is None:
-            return ""
-        elif not hasattr(node, 'left') and not hasattr(node, 'right'):
-            return str(node.value)
-        elif node.value == "&":
-            return f"({tree_to_string(node.left)} & {tree_to_string(node.right)})"
-        elif node.value == "|":
-            return f"({tree_to_string(node.left)} | {tree_to_string(node.right)})"
-        elif node.value == ">":
-            return f"({tree_to_string(binarytree.Node('!', node.left))} | {tree_to_string(node.right)})"
-        elif node.value == "!":
-            if not hasattr(node.right, 'left') and not hasattr(node.right, 'right'):
-                return f"!{node.right.value}"
-            elif node.right.value == "&":
-                return f"!({tree_to_string(node.right.left)} & {tree_to_string(node.right.right)})"
-            elif node.right.value == "|":
-                return f"!({tree_to_string(node.right.left)} | {tree_to_string(node.right.right)})"
-            elif node.right.value == ">":
-                return f"!({tree_to_string(node.right.left)} | {tree_to_string(binarytree.Node('!', node.right.right))})"
-            elif node.right.value == "!":
-                return f"!{tree_to_string(node.right.right)}"
-
-    return tree_to_string(cnf_formula_tree)
-
-# Example
-formula = "!(a & b | c) > (d | e & !(f | g) > h)"
-cnf_formula_string = to_cnf_string_with_clauses(formula)
-print("CNF Form as String with Clauses: ", cnf_formula_string)
