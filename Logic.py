@@ -1,4 +1,5 @@
 import binarytree
+from sympy import symbols, to_cnf
 # -------------------------------------------------- Infix To Post Fix --------------------------------------------------
 
 def infix_to_postfix(expression): # Shunting Yard algorithm.
@@ -130,44 +131,79 @@ print(tree)
 #(p>(q|r))|!(r>w)
 #!(a & b | c) > (d | e & !(f | g) > h)
 #((a | b) & (c > d)) | (e & f)
-def to_cnf(formula):
-    def distribute_or_over_and(left, right):
-        if isinstance(left, binarytree.Node) and left.value == "&":
-            return binarytree.Node("&", distribute_or_over_and(left.left, right), distribute_or_over_and(left.right, right))
-        elif isinstance(right, binarytree.Node) and right.value == "&":
-            return binarytree.Node("&", distribute_or_over_and(left, right.left), distribute_or_over_and(left, right.right))
-        else:
-            return binarytree.Node("|", left, right)
 
-    def cnf(node):
-        if node is None:
-            return None
-        elif not hasattr(node, 'left') and not hasattr(node, 'right'):
-            return node
-        elif node.value == "&":
-            return binarytree.Node("&", cnf(node.left), cnf(node.right))
-        elif node.value == "|":
-            return distribute_or_over_and(cnf(node.left), cnf(node.right))
-        elif node.value == ">":
-            return distribute_or_over_and(cnf(binarytree.Node("!", node.left)), cnf(node.right))
-        elif node.value == "!":
-            if not hasattr(node.right, 'left') and not hasattr(node.right, 'right'):
-                return node
-            elif node.right.value == "&":
-                return distribute_or_over_and(cnf(binarytree.Node("!", node.right.left)), cnf(binarytree.Node("!", node.right.right)))
-            elif node.right.value == "|":
-                return cnf(binarytree.Node("&", binarytree.Node("!", node.right.left), binarytree.Node("!", node.right.right)))
-            elif node.right.value == ">":
-                return cnf(binarytree.Node("&", cnf(node.right.left), cnf(binarytree.Node("!", node.right.right))))
-            elif node.right.value == "!":
-                return cnf(node.right.right)
-        
-    cnf_tree = cnf(formula)
-    return cnf_tree
+#(p∧q)∨(¬r→s)
+#(p&q)|(!r>s)
+def get_cnf_string(node):
+    if node is None:
+        return ""
 
-# Example
-cnf_formula = to_cnf(tree)
-print("CNF Form: ")
-print(cnf_formula)
+    # If it's a leaf node (operand), return the variable
+    if not node.left and not node.right:
+        return str(node.value)
+
+    # Recursively get CNF strings for left and right subtrees
+    left_cnf = get_cnf_string(node.left)
+    right_cnf = get_cnf_string(node.right)
+
+    # Combine the CNF strings based on the operator
+    if node.value == "&":
+        cnf_string = f"({left_cnf} & {right_cnf})"
+    elif node.value == "|":
+        cnf_string = f"({left_cnf} | {right_cnf})"
+    elif node.value == "!":
+        cnf_string = f"!({right_cnf})"
+    elif node.value == ">":
+        cnf_string = f"(! {left_cnf} | ({right_cnf}))"
+    
+    cnf_string = cnf_string.replace("! !","")
+    return cnf_string
+
+def distribute_disjunctions(expression):
+    # Find the outermost disjunction
+    start = expression.find('|')
+    if start == -1:
+        return expression  # If no disjunction is found, return the expression as is
+
+    # Find the operands on the left and right of the disjunction
+    left_operand = expression[:start].strip(' ')
+    right_operand = expression[start + 1:].strip(' ')
+
+    # Recursively distribute disjunctions over conjunctions
+    distributed_left = distribute_disjunctions(left_operand)
+    distributed_right = distribute_disjunctions(right_operand)
+
+    # Combine the distributed operands with conjunction
+    distributed_expression = f"({distributed_left}) | ({distributed_right})"
+
+    return distributed_expression
+
+# Usage example
+cnf_formula = get_cnf_string(tree)
+cnf_formula = distribute_disjunctions(cnf_formula)
+print("---------------------")
+print("CNF: " + cnf_formula)
+print("---------------------")
+
+
+def convert_to_cnf(logical_expression):
+    # Define symbols for the variables in the logical expression
+    variables = symbols(logical_expression)
+
+    # Parse the logical expression and convert it to CNF
+    cnf_expression = to_cnf(logical_expression)
+
+    return str(cnf_expression)
+
+# Example usage
+logical_expression = input("Enter your logical expression: ")
+cnf_result = convert_to_cnf(logical_expression)
+
+print("---------------------")
+print("Original Logical Expression:", logical_expression)
+print("---------------------")
+print("CNF Form:", cnf_result)
+print("---------------------")
+
 
 
