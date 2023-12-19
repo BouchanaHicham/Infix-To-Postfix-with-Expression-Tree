@@ -309,17 +309,61 @@ def Disjunction_Over_Conjunction(And_Conj_Node, other_node):
     And_Node.right = Distribute_Disjunctions(Or_Node_2)
 
     return And_Node     # Resulting in this structure:     (B|A) & (C|A)
-'''      
-    _&__
-   /     \
-  |       |
- / \     / \
-B   A   C   A
+    '''      
+          _&__
+         /     \
+        |       |
+       / \     / \
+      B   A   C   A
 
-'''
-  
+    '''
+
+# -------------- [ Simplify_CNF ] --------------
+def Simplify_CNF(node):
+    if node is None:
+        return None
+
+    if node.value == '&':
+        # Simplify both left and right branches
+        node.left = Simplify_CNF(node.left)
+        node.right = Simplify_CNF(node.right)
+
+        # Remove duplicate clauses
+        if are_trees_equal(node.left, node.right):
+            return node.left
+
+        # Remove unnecessary negations
+        if node.left.val == '!' and node.right.val == '!':
+            return Simplify_CNF(node.left.left)
+
+    elif node.value == '|':
+        # Simplify both left and right branches
+        node.left = Simplify_CNF(node.left)
+        node.right = Simplify_CNF(node.right)
+
+        # Remove duplicate clauses
+        if are_trees_equal(node.left, node.right):
+            return node.left
+
+    return node
+
+def are_trees_equal(tree1, tree2):
+    # Check if both are NULL or One of them is
+    if tree1 is None and tree2 is None:
+        return True
+    elif tree1 is None or tree2 is None:
+        return False
+    
+    # Real check happense here:
+    return (
+        tree1.value == tree2.value and
+        are_trees_equal(tree1.left, tree2.left) and
+        are_trees_equal(tree1.right, tree2.right)
+    )
+
+ 
 # ----- Init Values -------
-formula = "A | (B & C)"
+formula = "(p|q)#!p"
 #formula = str(input('Enter Your Formula:\n'))
 postfix_formula = infix_to_postfix(formula)
 print("---------------------")
@@ -349,7 +393,9 @@ print(Distribution_Tree)
 print(Tree_To_Formula(Distribution_Tree))
 
 print(" ----------------------- [ Simplified_Form ] ----------------------- ")
-
+Simplified_Tree = Simplify_CNF(Distribution_Tree)
+print(Simplified_Tree)
+print(Tree_To_Formula(Simplified_Tree))
 
 # p&!q>r 
 # (p>(q|r))|!(r>w)
