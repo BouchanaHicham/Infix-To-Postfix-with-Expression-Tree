@@ -57,7 +57,7 @@ def build_expression_tree(postfix_expression):
                 right = stack.pop()
                 if char == "!":    # Since NOT(!) doesn't include 2 options like (&,| ..) we have a special case for it where we put it to the Right
                     node = binarytree.Node(char)
-                    node.right = right
+                    node.left = right # i put this to left so i don't encounter issues later on when converting to CNF Form i can switch to right, but i'll have to switch everything to the right in CNF covnversion
                 else:
                     left = stack.pop()
                     node = binarytree.Node(char)
@@ -107,82 +107,88 @@ def evaluate_expression(expression):
     return stack[0]
 
 
- 
-'''
-def print_tree(node):
-    if node:
-        print("Node Value:", node.value)
-        print_tree(node.left)
-        print_tree(node.right)
-'''
-
-# Call the function with the root of your tree
-#print_tree(tree)
-
-def convert_to_formula(node):
+def Tree_To_Formula(node):
 
     if node is None:
         return None
     
-    if node.value.isalpha():
+    if node.value.isalpha(): # Print Aplha [1st Prio]
         return node.value
-    elif node.value == '!':
-        return f"!{convert_to_formula(node.left)}"
-    elif node.value in ['&', '|']:
-        left_formula = convert_to_formula(node.left)
-        right_formula = convert_to_formula(node.right)
+    
+    elif node.value == '!': # Check The Left Child Of '!' If Alpha It Will Be Printed Above, Else: It Will Check Again ( ! or (&,|) )
+        return f"!{Tree_To_Formula(node.left)}"
+    
+    elif node.value in ['&', '|']: # Checks If Either Symbol
+
+        left_formula = Tree_To_Formula(node.left) # Sends Left Child To Be Checked
+        right_formula = Tree_To_Formula(node.right) # Sends Right Child To Be Checked
+
         return f"({left_formula} {node.value} {right_formula})"
 
-
-def to_cnf(node):
+# -------------- [ To_CNF_Form ] --------------
+def To_CNF_Form(node):
     #print(node)
     if node is None:
-        return binarytree.Node('p')
-        #return None
+        #return binarytree.Node('p')
+        return None
     
     if node.value.isalpha():
         return binarytree.Node(node.value)
+    
     elif node.value == '!':
-        # Handle negation
-        child_cnf = to_cnf(node.left)
-        Negative_Node = binarytree.Node('!')
-        Negative_Node.left = child_cnf
+        # This Can Be a whole branch that will be connected to the Left of (!), it will recursively run until it finds an alphabet
+        Child_CNF = To_CNF_Form(node.left)  # ------------------------------------------------+
+        # --- --- --- --- --- --- --- ---                                                     |
+        Negative_Node = binarytree.Node('!') # We create a new node with '&' as the value     |
+        # --- --- --- --- --- --- --- ---                                                     |
+        # We attache the CNF form  of the left child.                                         |
+        Negative_Node.left = Child_CNF # -----------------------------------------------------+
+
         return Negative_Node
+    
     elif node.value == '&':
-        # Handle conjunction (AND)
-        left_cnf = to_cnf(node.left)
-        right_cnf = to_cnf(node.right)
-        And_Node = binarytree.Node('&')
-        And_Node.left = left_cnf
-        And_Node.right = right_cnf
+        # Recursively call To_CNF_Form on the left and right children.
+        left_cnf = To_CNF_Form(node.left)  # ------------------------------------------------+
+        right_cnf = To_CNF_Form(node.right)# --------------------------------------------+   |
+        # --- --- --- --- --- --- --- ---                                                |   |
+        And_Node = binarytree.Node('&') # We create a new node with '&' as the value     |   |
+        # --- --- --- --- --- --- --- ---                                                |   |
+        # We attache the CNF forms of the left and right children.                       |   |
+        And_Node.left = left_cnf #-------------------------------------------------------|---+
+        And_Node.right = right_cnf #-----------------------------------------------------+
         return And_Node
+    
     elif node.value == '|':
-        # Handle disjunction (OR)
-        left_cnf = to_cnf(node.left)
-        right_cnf = to_cnf(node.right)
-        Or_Node = binarytree.Node('|')
-        Or_Node.left = left_cnf
-        Or_Node.right = right_cnf
+        left_cnf = To_CNF_Form(node.left)  # ------------------------------------------------+
+        right_cnf = To_CNF_Form(node.right)# --------------------------------------------+   |
+        # --- --- --- --- --- --- --- ---                                                |   |
+        Or_Node = binarytree.Node('|') # We create a new node with '|' as the value      |   |
+        # --- --- --- --- --- --- --- ---                                                |   |
+        # We attache the CNF forms of the left and right children.                       |   |
+        Or_Node.left = left_cnf  #-------------------------------------------------------|---+
+        Or_Node.right = right_cnf  #-----------------------------------------------------+
         return Or_Node
+    
     elif node.value == '>':
-        # Handle implication
-        left_cnf = to_cnf(node.left)
-        right_cnf = to_cnf(node.right)
+        left_cnf = To_CNF_Form(node.left) # ------------------------------------------------------+
+        right_cnf = To_CNF_Form(node.right) # ------------------------------------------------+   |
+        # --- --- --- --- --- --- --- ---                                                     |   |
+        Or_Node = binarytree.Node('|') # We create a new node with '|' as the value           |   |
+        Negative_Node = binarytree.Node('!') # We create a new node with '!' as the value -+  |   |
+        # --- --- --- --- --- --- --- ---                                                  |  |   |
+        Negative_Node.left = left_cnf # ---------------------------------------------------|--|---|
+        #                                                                                  |  |   
+        Or_Node.left = Negative_Node # ----------------------------------------------------+  |
+        Or_Node.right = right_cnf# -----------------------------------------------------------+
 
-        Or_Node = binarytree.Node('|')
-        Negative_Node = binarytree.Node('!')
-
-        Negative_Node.left = left_cnf
-
-        Or_Node.left = Negative_Node
-        Or_Node.right = right_cnf
-
+        # Example A > B = !A | B   =)
+        
         return Or_Node
     
     elif node.value == '#':
         # ->
-        left_cnf = to_cnf(node.left)
-        right_cnf = to_cnf(node.right)
+        left_cnf = To_CNF_Form(node.left)
+        right_cnf = To_CNF_Form(node.right)
 
         Or_Node = binarytree.Node('|')
         Negative_Node = binarytree.Node('!')
@@ -193,16 +199,18 @@ def to_cnf(node):
         # <-
         And_Node = binarytree.Node('&')
         And_Node.left = Or_Node
+
         Or_Node = binarytree.Node('|')
         Negative_Node = binarytree.Node('!')
         Negative_Node.left = right_cnf
         Or_Node.left = Negative_Node
         Or_Node.right = left_cnf
+
         And_Node.right = Or_Node
 
         return And_Node
 
-
+# -------------- [ Negation_Spread ] --------------
 def Negation_Spread(node):
     if node.val == '!':
         child = node.left
@@ -240,7 +248,7 @@ def Negation_Spread(node):
         node.right = Negation_Spread(node.right)
     return node 
 
-
+# -------------- [ Distribute_Disjunctions ] --------------
 def Distribute_Disjunctions(node):
     if node is None:
         return None
@@ -265,6 +273,7 @@ def Distribute_Disjunctions(node):
 
     return node
 
+# -------------- [ Disjunction_Over_Conjunction ] --------------
 def Disjunction_Over_Conjunction(conjunction_node, other_node):
     if conjunction_node is None or other_node is None:
         return None
@@ -301,19 +310,22 @@ print(tree)
 # ------------------------
 
 print(" ----------------------- [ CNF Form ] ----------------------- ")
-CNF_Tree = to_cnf(tree)
+CNF_Tree = To_CNF_Form(tree)
 print(CNF_Tree)
-print(convert_to_formula(CNF_Tree))
+print(Tree_To_Formula(CNF_Tree))
 
 print(" ----------------------- [ Spreading Negation ] ----------------------- ")
 Negation_Tree = Negation_Spread(CNF_Tree)
 print(Negation_Tree)
-print(convert_to_formula(Negation_Tree))
+print(Tree_To_Formula(Negation_Tree))
 
 print(" ----------------------- [ Distribution_Tree ] ----------------------- ")
 Distribution_Tree = Distribute_Disjunctions(CNF_Tree)
 print(Distribution_Tree)
-print(convert_to_formula(Distribution_Tree))
+print(Tree_To_Formula(Distribution_Tree))
+
+print(" ----------------------- [ Simplified_Form ] ----------------------- ")
+
 
 # p&!q>r 
 # (p>(q|r))|!(r>w)
