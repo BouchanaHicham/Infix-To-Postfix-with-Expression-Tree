@@ -262,16 +262,23 @@ def Negation_Spread(node):
 def Distribute_Disjunctions(node):
     if node is None:
         return None
-    # Example: A∨(B∧C)≡(A∨B)∧(A∨C)  aka A | (B & C) ≡ (A|B)&(A|C)
+    # Example:   A | (B & C) ≡ (A|B) & (A|C)
+    '''      
+         |__
+        /   \
+        A    &
+            / \
+           B   C
 
+    '''
     if node.val == '|':
         left_cnf = Distribute_Disjunctions(node.left) # A
         right_cnf = Distribute_Disjunctions(node.right) # & ---------------  1
 
-        if left_cnf and left_cnf.val == '&' and right_cnf:      # A & B | C  pattern
+        if left_cnf and left_cnf.val == '&' and right_cnf:      # (A & B) | C  pattern
             return Disjunction_Over_Conjunction(left_cnf, right_cnf)
         
-        elif right_cnf and right_cnf.val == '&':                #  A | (B & C )  pattern
+        elif right_cnf and right_cnf.val == '&':                #  A | (B & C)  pattern
             return Disjunction_Over_Conjunction(right_cnf, left_cnf)
         
         else:
@@ -281,14 +288,14 @@ def Distribute_Disjunctions(node):
             return Or_Node
 
     elif node.val in ['&', '!']:
-        node.left = Distribute_Disjunctions(node.left)  # B
-        node.right = Distribute_Disjunctions(node.right) # C
+        node.left = Distribute_Disjunctions(node.left)  
+        node.right = Distribute_Disjunctions(node.right) 
 
     return node  # if not an operator but an Operand (Alpha) Then it will return the Operand
 
 # -------------- [ Disjunction_Over_Conjunction ] --------------
-def Disjunction_Over_Conjunction(And_Conj_Node, other_node):
-    if And_Conj_Node is None or other_node is None:
+def Disjunction_Over_Conjunction(And_Conj_Node, static_node):
+    if And_Conj_Node is None or static_node is None:
         return None
 
     And_Node = binarytree.Node("&")     # We Initialize a new And_Node representing the conjunction that will result from the distribution.
@@ -296,7 +303,7 @@ def Disjunction_Over_Conjunction(And_Conj_Node, other_node):
     Or_Node_1 = binarytree.Node("|")          # Make The First '|' Node      [1]
 
     Or_Node_1.left = And_Conj_Node.left       # We Mix our Conjunction Node 'B' 
-    Or_Node_1.right = other_node              # with the other 'static' Node here 'A' Resulting in => ( B | A )
+    Or_Node_1.right = static_node              # with the other 'static' Node here 'A' Resulting in => ( B | A )
     
 
     And_Node.left = Distribute_Disjunctions(Or_Node_1) 
@@ -304,7 +311,7 @@ def Disjunction_Over_Conjunction(And_Conj_Node, other_node):
     Or_Node_2 = binarytree.Node("|")          # Make The Second '|' Node      [2]
 
     Or_Node_2.left = And_Conj_Node.right      # We Mix our Conjunction Node 'C' 
-    Or_Node_2.right = other_node              # with the other 'static' Node here 'A' Resulting in => ( C | A )
+    Or_Node_2.right = static_node              # with the other 'static' Node here 'A' Resulting in => ( C | A )
 
     And_Node.right = Distribute_Disjunctions(Or_Node_2)
 
@@ -363,7 +370,7 @@ def are_trees_equal(tree1, tree2):
 
  
 # ----- Init Values -------
-formula = "(p|q)#!p"
+formula = "A | (B & C)"
 #formula = str(input('Enter Your Formula:\n'))
 postfix_formula = infix_to_postfix(formula)
 print("---------------------")
